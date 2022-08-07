@@ -55,7 +55,7 @@ group("decode - long data", () => {
     bench("Buffer.from(longTextBuffer2, 'hex').toString()", () => Buffer.from(longTextBuffer[2], "hex").toString());
 });
 
-await save(await run(), "deno", __dirname, {
+await save(await run(), "deno", __dirname, 'javascript', {
     encode: (name) => name.match(/\.toString\('[aA-zZ0-9]+'\)/)?.[0] || name,
     decode: (name) => name.match(/\.from\('(.*?)+'\, '[aA-zZ0-9]+'\)/)?.[0] || name,
 });

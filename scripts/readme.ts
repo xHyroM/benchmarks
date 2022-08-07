@@ -3,6 +3,7 @@ import { duration } from '../node_modules/mitata/reporter/fmt.mjs';
 import benchmarks from './benchmarks';
 import { join, resolve } from 'path';
 import { exec } from 'bun-utilities';
+import { readdir } from 'fs/promises';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
@@ -48,10 +49,9 @@ for (const promiseBenchmark of benchmarks) {
     markdown += `## ${benchmark.name.at(0).toUpperCase() + benchmark.name.slice(1)}\n`;
 
     const path = resolve('.', benchmark.path, 'outputs');
-    const outputs = {
-        bun: JSON.parse(await Bun.file(join(path, 'bun.json')).text()),
-        deno: JSON.parse(await Bun.file(join(path, 'deno.json')).text()),
-        node: JSON.parse(await Bun.file(join(path, 'node.json')).text()),
+    const outputs: Record<string, { language: string, runtime: string, benchmarks: any[] }> = {};
+    for (const output of await readdir(path)) {
+        outputs[output] = JSON.parse(await Bun.file(join(path, output)).text())
     }
 
     for (const value of Object.values(outputs)) {
@@ -59,10 +59,11 @@ for (const promiseBenchmark of benchmarks) {
             if (tables[b.group] === undefined) tables[b.group] = {};
 
             tables[b.group][b.name] = tables[b.group][b.name] || [
-                ['Runtime', 'Benchmark', 'Average', 'p75', 'p99', 'Min', 'Max']
+                ['Language', 'Runtime', 'Benchmark', 'Average', 'p75', 'p99', 'Min', 'Max']
             ];
 
             tables[b.group][b.name].push([
+                value.language,
                 value.runtime,
                 b.benchmark,
                 `${!b.type ? duration(b.stats.avg) : b.stats.avg.toLocaleString('en-US')}/${b.type || 'iter'}`,

@@ -7,7 +7,6 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     // "bun-types" is the important part
-    // @types/node for now (node:fs/promises is broken idk why)
-    "types": ["bun-types", "@types/node"]
+    "types": ["bun-types"]
   }
 }

@@ -25,23 +25,3 @@ export default benchmarks.map(async(benchmark) => {
         category: benchmark.split('/').slice(0, -1).pop() != 'benchmarks' ? benchmark.split('/').slice(0, -1).pop() : null,
     }
 });
-
-/*export default [
-    {
-        'name': 'console',
-        'path': 'console/'
-    },
-    {
-        'name': 'nanoid',
-        'category': '3rd package',
-        'path': '3rd-packages/nanoid/'
-    },
-    {
-        'name': 'json',
-        'path': 'json/'
-    },
-    {
-        'name': 'buffer',
-        'path': 'buffer/'
-    }
-]*/

@@ -1,0 +1,1 @@
+{"benchmarks":[{"name":"http","group":null,"warmup":true,"baseline":false,"async":true,"stats":{"avg":105248.29151773489,"min":11944.875762895615,"max":151778.58336153542,"p75":110358.66216,"p99":139530.249493,"p995":139530.249493},"type":"rps","formattedName":"[crystal] http","id":"http","benchmark":"http"}],"runtime":"Crystal x64-linux","language":"crystal"}

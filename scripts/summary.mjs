@@ -21,10 +21,11 @@ if (typeof Deno === "undefined") {
  * 
  * @typedef {'deno'|'bun'|'node'} Runtime
  */
-export const save = async(output, runtime, path, keepFrom) => {
+export const save = async(output, runtime, path, language = "javascript", keepFrom) => {
     output.benchmarks = output.benchmarks.map(b => {
         return { ...b, formattedName: `[${runtime}] ${b.name}`, id: b.name, benchmark: keepFrom?.[b.group]?.(b.name) || b.name }
     });
+    output.language = language;
 
     if (typeof Bun !== "undefined") {
         await Bun.write(join(path, "outputs", `${runtime}.json`), JSON.stringify(output));
@@ -35,39 +36,59 @@ export const save = async(output, runtime, path, keepFrom) => {
     }
 }
 
-export default async(summaries, benchmarks, reverse) => {
-    for (const summaryName of summaries) {
-        console.log(kleur.bold(true, `Summary for ${kleur.green(true, summaryName)}`));
+const sumForBench = (benchmarks, summaryName, main, forCompare, reverse = false) => {
+    const mainBenchmark = benchmarks.find(b => b.formattedName.includes(main) && b.id === summaryName);
+    if (!mainBenchmark) return;
 
-        // Node & Deno
-        const nodeAndDeno = [benchmarks.find(b => b.formattedName.includes('node') && b.id === summaryName), benchmarks.find(b => b.formattedName.includes('deno') && b.id === summaryName)];
-        console.log(__summary(nodeAndDeno, '(node & deno)', reverse));
+    for (const bench of forCompare) {
+        const comp = benchmarks.find(b => b.formattedName.includes(bench) && b.id === summaryName);
+        if (!comp) continue;
 
-        // Node & Bun
-        const nodeAndBun = [benchmarks.find(b => b.formattedName.includes('node') && b.id === summaryName), benchmarks.find(b => b.formattedName.includes('bun') && b.id === summaryName)];
-        console.log(__summary(nodeAndBun, '(node & bun)', reverse));
-
-        // Deno & Bun
-        const denoAndBun = [benchmarks.find(b => b.formattedName.includes('deno') && b.id === summaryName), benchmarks.find(b => b.formattedName.includes('bun') && b.id === summaryName)];
-        console.log(__summary(denoAndBun, '(deno & bun)', reverse));
-
-        // All
-        console.log(__summary(benchmarks.filter(b => b.id === summaryName), '(deno & bun & node)', reverse));
+        const b = [mainBenchmark, comp];
+        console.log(__summary(b, `(${main} & ${bench})`, { reverse: reverse }));
     }
 }
 
-export function __summary(benchmarks, type = '(deno & bun & node)', reverse, { colors = true } = {}) {
-    // TODO: IMPLEMENT REVERSE
-    benchmarks = benchmarks.filter(b => !b.error);
-    benchmarks.sort((a, b) => a.stats.avg - b.stats.avg);
-    const baseline = benchmarks.find(b => b.baseline) || benchmarks[0];
-  
-    return kleur.bold(colors, type) + ((null == baseline.group || baseline.group.startsWith?.('$mitata_group')) ? '' : kleur.gray(colors, ` for ${baseline.group}`))
-      + `\n  ${kleur.bold(colors, kleur.cyan(colors, baseline.formattedName))}`
-  
-      + benchmarks.filter(b => b !== baseline).map(b => {
-        const diff = Number((1 / baseline.stats.avg * b.stats.avg).toFixed(2));
-        const inv_diff = Number((1 / b.stats.avg * baseline.stats.avg).toFixed(2));
-        return `\n   ${kleur[1 > diff ? 'red' : 'green'](colors, 1 <= diff ? diff : inv_diff)}x ${1 > diff ? 'slower' : 'faster'} than ${kleur.bold(colors, kleur.cyan(colors, b.formattedName))}`;
-      }).join('');
+export default async(summaries, benchmarks, reverse = false) => {
+    for (const summaryName of summaries) {
+        console.log(kleur.bold(true, `Summary for ${kleur.green(true, summaryName)}`));
+
+        sumForBench(benchmarks, summaryName, 'node', ['deno', 'bun', 'crystal'], reverse);
+        sumForBench(benchmarks, summaryName, 'deno', ['node', 'bun', 'crystal'], reverse);
+        sumForBench(benchmarks, summaryName, 'bun', ['node', 'deno', 'crystal'], reverse);
+        sumForBench(benchmarks, summaryName, 'crystal', ['node', 'deno', 'bun'], reverse);
+
+        // All
+        console.log(__summary(benchmarks.filter(b => b.id === summaryName), '(all)', { reverse: reverse }));
+    }
+}
+
+export function __summary(benchmarks, type = '(all)', { colors = true, reverse = false } = {}) {
+    if (reverse) {
+        benchmarks = benchmarks.filter(b => !b.error);
+        benchmarks.sort((a, b) => b.stats.avg - a.stats.avg);
+        const baseline = benchmarks.find(b => b.baseline) || benchmarks[0];
+      
+        return kleur.bold(colors, type) + ((null == baseline.group || baseline.group.startsWith?.('$mitata_group')) ? '' : kleur.gray(colors, ` for ${baseline.group}`))
+          + `\n  ${kleur.bold(colors, kleur.cyan(colors, baseline.formattedName))}`
+      
+          + benchmarks.filter(b => b !== baseline).map(b => {
+            const diff = Number((1 / baseline.stats.avg * b.stats.avg).toFixed(2));
+            const inv_diff = Number((1 / b.stats.avg * baseline.stats.avg).toFixed(2));
+            return `\n   ${kleur[1 < diff ? 'red' : 'green'](colors, 1 <= diff ? diff : inv_diff)}x ${1 < diff ? 'slower' : 'faster'} than ${kleur.bold(colors, kleur.cyan(colors, b.formattedName))}`;
+          }).join('');
+    } else {
+        benchmarks = benchmarks.filter(b => !b.error);
+        benchmarks.sort((a, b) => a.stats.avg - b.stats.avg);
+        const baseline = benchmarks.find(b => b.baseline) || benchmarks[0];
+      
+        return kleur.bold(colors, type) + ((null == baseline.group || baseline.group.startsWith?.('$mitata_group')) ? '' : kleur.gray(colors, ` for ${baseline.group}`))
+          + `\n  ${kleur.bold(colors, kleur.cyan(colors, baseline.formattedName))}`
+      
+          + benchmarks.filter(b => b !== baseline).map(b => {
+            const diff = Number((1 / baseline.stats.avg * b.stats.avg).toFixed(2));
+            const inv_diff = Number((1 / b.stats.avg * baseline.stats.avg).toFixed(2));
+            return `\n   ${kleur[1 > diff ? 'red' : 'green'](colors, 1 <= diff ? diff : inv_diff)}x ${1 > diff ? 'slower' : 'faster'} than ${kleur.bold(colors, kleur.cyan(colors, b.formattedName))}`;
+          }).join('');
+    }
   }

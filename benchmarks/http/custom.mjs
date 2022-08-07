@@ -1,7 +1,11 @@
-import { benchmark, br, header, size } from '../../node_modules/mitata/reporter/table.mjs';
+import { br, size } from '../../node_modules/mitata/reporter/table.mjs';
+import * as kleur from '../../node_modules/mitata/reporter/clr.mjs';
 import { save } from '../../scripts/summary.mjs';
 
 const __dirname = new URL('.', import.meta.url).pathname;
+const formatNumber = (number, locale = 'en-us') => {
+    return number.toFixed(2).toLocaleString(locale);
+}
 
 // From mitata
 function runtime() {
@@ -32,11 +36,26 @@ function os() {
         node: () => `${process.arch}-${process.platform}`,
     })[runtime()]();
 }
+
+function header({ size, avg = true, min_max = true, percentiles = true }) {
+    return 'benchmark'.padEnd(size, ' ')
+      + (!avg ? '' : 'time (avg)'.padStart(14, ' '))
+      + (!min_max ? '' : '(min … max)'.padStart(24, ' '))
+      + (!percentiles ? '' : ` ${'p75'.padStart(9, ' ')} ${'p99'.padStart(9, ' ')}`);
+  }
+
+function benchmark(n, b, { size, avg = true, colors = true, min_max = true, percentiles = true }) {
+    return n.padEnd(size, ' ')
+      + (!avg ? '' : `${kleur.yellow(colors, formatNumber(b.avg))}/rps`.padStart(14 + 10 * colors, ' '))
+      + (!min_max ? '' : `(${kleur.cyan(colors, formatNumber(b.min))} … ${kleur.magenta(colors, formatNumber(b.max))})`.padStart(24 + 2 * 10 * colors, ' '))
+      + (!percentiles ? '' : ` ${kleur.gray(colors, formatNumber(b.p75)).padStart(9 + 10 * colors, ' ')} ${kleur.gray(colors, formatNumber(b.p99)).padStart(9 + 10 * colors, ' ')}`);
+}
 // From mitata ^
 
 const args = typeof Deno !== 'undefined' ? Deno.args : process.argv.slice(2);
 const parsed = JSON.parse(args[0]);
 const rnt = args[1];
+const language = args[2];
 
 const benchmarks = [
     {
@@ -73,5 +92,5 @@ for (const b of benchmarks) {
 
 await save({
     benchmarks,
-    runtime: `${`${rnt} ${version(rnt)}`.trim()} (${os(rnt)})`
-}, rnt, __dirname);
+    runtime: language === 'javascript' ? `${`${rnt} ${version(rnt)}`.trim()} (${os(rnt)})` : `${language.at(0).toUpperCase() + language.slice(1)} ${process.arch}-${process.platform}`,
+}, rnt, __dirname, language);
