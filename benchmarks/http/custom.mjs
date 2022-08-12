@@ -37,7 +37,8 @@ function os() {
 const args = typeof Deno !== 'undefined' ? Deno.args : process.argv.slice(2);
 const parsed = JSON.parse(args[0]);
 const rnt = args[1];
-
+console.log(parsed);
+// WAIT FOR https://github.com/hatoo/oha/issues/177
 const benchmarks = [
     {
         name: 'http',
@@ -46,12 +47,11 @@ const benchmarks = [
         baseline: false,
         async: true,
         stats: {
-            avg: parsed.result.rps.mean,
-            min: parsed.result.rps.stddev,
-            max: parsed.result.rps.max,
-            p75: parsed.result.rps.percentiles['75'],
-            p99: parsed.result.rps.percentiles['99'],
-            p995: parsed.result.rps.percentiles['99'],
+            avg: parsed.summary.requestsPerSec,
+            min: parsed.summary.requestsPerSec,
+            max: parsed.summary.requestsPerSec,
+            p75: parsed.summary.requestsPerSec,
+            p99: parsed.summary.requestsPerSec,
         },
         type: 'rps',
     }

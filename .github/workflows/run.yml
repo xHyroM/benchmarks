@@ -33,10 +33,10 @@ jobs:
         with:
           python-version: '3.10' 
 
-      - name: Install Bombardier
+      - name: Install Oha
         run: |-
-          wget https://github.com/codesenberg/bombardier/releases/download/v1.2.5/bombardier-linux-amd64 -O scripts/bombardier
-          chmod +x scripts/bombardier
+          wget https://github.com/xhyrom-forks/oha/releases/download/aug.0.6/oha-linux-amd64 -O scripts/oha
+          chmod +x scripts/oha
           echo . >> $GITHUB_PATH
 
       - name: Check if installed

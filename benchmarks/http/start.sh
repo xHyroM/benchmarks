@@ -9,7 +9,7 @@ do
     nohup $COMMAND > /dev/null 2>&1 &
     sleep 5s
 
-    OUTPUT="$(../../scripts/bombardier -p r -o j -l -c 40 -d 10s -m GET http://localhost:3000)"
+    OUTPUT="$(../../scripts/oha -j -z 10s -m GET http://localhost:3000)"
     if [[ "$i" == *"bun"* ]] || [[ "$i" == *"node"* ]]; then $i custom.mjs "$OUTPUT" "$i"; fi
     if [[ "$i" == *"deno"* ]]; then deno run -A --unstable --allow-write --allow-net custom.mjs "$OUTPUT" "$i"; fi
 
